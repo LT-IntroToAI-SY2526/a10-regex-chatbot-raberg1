@@ -7,17 +7,20 @@ from typing import List, Callable, Tuple, Any, Match
 
 
 def get_page_html(title: str) -> str:
-    search_response = requests.get(
-        "https://en.wikipedia.org/w/api.php",
-        params={"action": "query", "list": "search", "srsearch": title, "format": "json"},
-        headers={"User-Agent": "intro-ai-class/1.0"},
-        timeout=10
-    )
-    results = search_response.json().get("query", {}).get("search", [])
-    if results:
-        title = results[0]["title"]  # use the top search result title
-        print(f"Searching Wikipedia for: {title}")
-    
+    try:
+        search_response = requests.get(
+            "https://en.wikipedia.org/w/api.php",
+            params={"action": "query", "list": "search", "srsearch": title, "format": "json"},
+            headers={"User-Agent": "intro-ai-class/1.0"},
+            timeout=10
+        )
+        results = search_response.json().get("query", {}).get("search", [])
+        if results:
+            title = results[0]["title"]
+            print(f"Searching Wikipedia for: {title}")
+    except requests.exceptions.ConnectTimeout:
+        print(f"Search timed out, trying '{title}' directly...")
+        
     for attempt in range(5):
         response = requests.get(
             "https://en.wikipedia.org/w/api.php",
@@ -145,7 +148,7 @@ def get_death_date(name: str) -> str:
     """
     infobox_text = clean_text(get_first_infobox_text(get_page_html(name)))
     print(infobox_text)
-    pattern = r"(?:Died)(?:[\w \d,]*\()(?P<death>\d{4}-\d{2}-\d{2})"
+    pattern = r"(?:Died.*?)\((?P<death>\d{4}-\d{2}-\d{2})"
     error_text = (
         "Page infobox has no death information (at least none in xxxx-xx-xx format)"
     )
